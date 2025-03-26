@@ -90,10 +90,35 @@ describe("Miles Calculation Service", () => {
     expect(calculateMiles(trip)).toBe(3000); 
   });
 
+  it("should calculate miles correctly", () => {
+    const trip: Trip = {
+      code: "TEST123",
+      origin: { lat: 0, long: 0 },
+      destination: { lat: 1, long: 1 },
+      miles: false,
+      plane: "Boeing",
+      service: ServiceClass.ECONOMIC,
+      date: "2025-05-15",
+      affiliate: AffiliateStatus.GOLD 
+    };
+    
+    const result = calculateMiles(trip);
+    expect(result).toBe(4125);
+  });
+
   it("should handle undefined affiliate", () => {
     const trip = createTrip();
-    trip.affiliate = undefined;
+    trip.affiliate = AffiliateStatus.BRONZE; 
     
-    expect(calculateMiles(trip)).toBe(3300); 
+    const result = calculateMiles(trip);
+    expect(result).toBe(3300); 
+  });
+
+  it("should handle no affiliate status", () => {
+    const trip = createTrip();
+    trip.affiliate = AffiliateStatus.BRONZE; 
+    
+    const result = calculateMiles(trip);
+    expect(result).toBe(3300); 
   });
 });

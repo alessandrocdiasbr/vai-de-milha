@@ -1,9 +1,11 @@
 import { generateMilesForTrip, getMilesFromCode } from "../../src/services/miles-service";
 import { findMiles, saveMiles } from "../../src/repositories/miles-repository";
+import * as distanceService from "../../src/services/distances-calculator-service";
 import { faker } from "@faker-js/faker";
-import { Trip, ServiceClass } from "../../src/protocols";
+import { Trip, ServiceClass, AffiliateStatus } from "../../src/protocols";
 
 jest.mock("../../src/repositories/miles-repository");
+jest.mock("../../src/services/distances-calculator-service");
 
 function createTrip(): Trip {
   return {
@@ -13,7 +15,8 @@ function createTrip(): Trip {
     miles: false,
     plane: faker.word.noun(),
     service: ServiceClass.ECONOMIC,
-    date: "2025-05-15"
+    date: "2025-05-15",
+    affiliate: AffiliateStatus.BRONZE
   };
 }
 
@@ -22,6 +25,18 @@ describe("Miles Service", () => {
     jest.clearAllMocks();
   });
 
+  it("should successfully generate and save miles for a new trip", async () => {
+    const trip = createTrip();
+    (findMiles as jest.Mock).mockResolvedValue(null);
+    (distanceService.calculateDistance as jest.Mock).mockReturnValue(3000);
+    
+    const result = await generateMilesForTrip(trip);
+    
+    expect(typeof result).toBe("number");
+    expect(result).toBeGreaterThan(0);
+    expect(saveMiles).toHaveBeenCalledWith(trip.code, result);
+  });
+  
   it("should return an error when miles already exist for a trip", async () => {
     const trip = createTrip();
     (findMiles as jest.Mock).mockResolvedValue({ code: trip.code, miles: 5000 });
@@ -31,15 +46,6 @@ describe("Miles Service", () => {
       message: expect.stringContaining("Miles already registered for code"),
     });
   });
-
-  it("should successfully generate and save miles for a new trip", async () => {
-    const trip = createTrip();
-    (findMiles as jest.Mock).mockResolvedValue(null);
-    const result = await generateMilesForTrip(trip);
-    expect(result).toEqual({ code: trip.code, miles: result.miles });
-    expect(saveMiles).toHaveBeenCalledWith(trip.code, result.miles);
-  });
-  
   it("should retrieve miles when a valid code is provided", async () => {
     const trip = createTrip();
     const milesData = { code: trip.code, miles: 5000 };
